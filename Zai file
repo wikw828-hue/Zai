@@ -1,0 +1,146 @@
+const express = require("express");
+const bodyParser = require("body-parser");
+const cors = require("cors");
+
+const app = express();
+const PORT = 3000;
+
+app.use(cors());
+app.use(bodyParser.json());
+app.use(express.static("public"));
+
+let users = [{ username: "admin", password: "1234" }];
+let dataPanel = [];
+
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+  const user = users.find(u => u.username === username && u.password === password);
+
+  if (user) {
+    res.json({ success: true });
+  } else {
+    res.json({ success: false });
+  }
+});
+
+app.get("/data", (req, res) => {
+  res.json(dataPanel);
+});
+
+app.post("/data", (req, res) => {
+  dataPanel.push(req.body);
+  res.json({ success: true });
+});
+
+app.listen(PORT, () => {
+  console.log(`Server jalan di http://localhost:${PORT}`);
+});
+🌐 2. Frontend
+index.html (Login)
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login Panel</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="login-box">
+    <h2>Login Panel</h2>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+  </div>
+
+<script src="script.js"></script>
+</body>
+</html>
+dashboard.html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Dashboard Panel</h1>
+
+  <input type="text" id="inputData" placeholder="Tambah data">
+  <button onclick="addData()">Tambah</button>
+
+  <ul id="list"></ul>
+
+<script src="script.js"></script>
+</body>
+</html>
+style.css
+body {
+  font-family: Arial;
+  background: #f4f4f4;
+  text-align: center;
+}
+
+.login-box {
+  margin-top: 100px;
+}
+
+input {
+  display: block;
+  margin: 10px auto;
+  padding: 10px;
+}
+
+button {
+  padding: 10px 20px;
+  background: blue;
+  color: white;
+  border: none;
+}
+script.js
+const API = "http://localhost:3000";
+
+function login() {
+  fetch(API + "/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: document.getElementById("username").value,
+      password: document.getElementById("password").value
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      window.location.href = "dashboard.html";
+    } else {
+      alert("Login gagal");
+    }
+  });
+}
+
+function addData() {
+  const value = document.getElementById("inputData").value;
+
+  fetch(API + "/data", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ value })
+  }).then(() => loadData());
+}
+
+function loadData() {
+  fetch(API + "/data")
+    .then(res => res.json())
+    .then(data => {
+      const list = document.getElementById("list");
+      list.innerHTML = "";
+      data.forEach(d => {
+        const li = document.createElement("li");
+        li.textContent = d.value;
+        list.appendChild(li);
+      });
+    });
+}
+
+if (document.getElementById("list")) {
+  loadData();
+}
